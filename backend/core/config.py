@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # Embedding model (loaded once at startup)
     embedding_model: str = "all-MiniLM-L6-v2"
 
-    # CORS — comma-separated list of allowed origins
+    # Security (overridden by ALLOWED_ORIGINS env var)
     allowed_origins: str = "*"
 
 
