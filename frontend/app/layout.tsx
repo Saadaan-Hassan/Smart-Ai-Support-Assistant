@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SessionProvider } from "@/contexts/session-context";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -33,6 +34,18 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider>
+            {/* Navigation Bar */}
+            <header className="fixed top-0 left-0 right-0 h-20 px-6 md:px-12 flex items-center justify-between z-50">
+              <div className="flex items-center gap-8">
+                <div className="text-xl font-bold tracking-tight">
+                  Saadaan Helps
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <ThemeToggle />
+              </div>
+            </header>
             {children}
             <Toaster position="top-center" richColors />
           </SessionProvider>
