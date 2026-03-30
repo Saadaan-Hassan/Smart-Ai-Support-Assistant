@@ -1,3 +1,5 @@
+import { API_ROUTES } from "@/constants/api-routes";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface IngestResponse {
@@ -8,7 +10,7 @@ export interface IngestResponse {
 
 export async function ingestContent(
   text?: string,
-  file?: File
+  file?: File,
 ): Promise<IngestResponse> {
   const formData = new FormData();
   if (text) {
@@ -18,7 +20,7 @@ export async function ingestContent(
     formData.append("file", file);
   }
 
-  const response = await fetch(`${API_BASE_URL}/ingest`, {
+  const response = await fetch(API_BASE_URL + API_ROUTES.INGEST, {
     method: "POST",
     body: formData,
   });
