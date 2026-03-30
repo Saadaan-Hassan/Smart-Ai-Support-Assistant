@@ -11,7 +11,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "MindVista Assistant",
+  title: "Saadaan Helps",
   description: "Minimalist ChatGPT-like RAG assistant",
   icons: {
     icon: "/favicon.ico",

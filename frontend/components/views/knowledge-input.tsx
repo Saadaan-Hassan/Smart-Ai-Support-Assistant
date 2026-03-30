@@ -1,14 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import {
-  Paperclip,
-  ArrowRight,
-  X,
-  Sparkles,
-  Globe,
-  FileText,
-} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Paperclip, ArrowRight, Sparkles, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 
@@ -17,20 +10,38 @@ import { ingestContent } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export function KnowledgeInputView() {
   const { setSessionId } = useSession();
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [activeTab, setActiveTab] = useState<"text" | "file">("text");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Aggressively prevent default browser behavior for drag/drop
+  useEffect(() => {
+    const handleWindowDragOver = (e: DragEvent) => e.preventDefault();
+    const handleWindowDrop = (e: DragEvent) => e.preventDefault();
+
+    window.addEventListener("dragover", handleWindowDragOver);
+    window.addEventListener("drop", handleWindowDrop);
+
+    return () => {
+      window.removeEventListener("dragover", handleWindowDragOver);
+      window.removeEventListener("drop", handleWindowDrop);
+    };
+  }, []);
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
+    if (activeTab !== "file") {
+      setActiveTab("file");
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
@@ -41,7 +52,7 @@ export function KnowledgeInputView() {
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFile = e.dataTransfer.files[0];
       if (!droppedFile.name.endsWith(".txt")) {
@@ -50,7 +61,6 @@ export function KnowledgeInputView() {
       }
       setFile(droppedFile);
       setText("");
-      setShowAttachMenu(false);
     }
   };
 
@@ -63,7 +73,6 @@ export function KnowledgeInputView() {
       }
       setFile(selectedFile);
       setText("");
-      setShowAttachMenu(false);
     }
   };
 
@@ -90,18 +99,18 @@ export function KnowledgeInputView() {
     }
   };
 
+  // Dynamic greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   return (
     <div className="max-w-5xl w-full mx-auto p-6 md:p-12 flex flex-col items-center">
-      {/* Centered Hero Greeting */}
-      <div className="text-center mb-16 space-y-4">
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-[11px] font-bold uppercase tracking-[0.4em] text-muted-foreground/30 mb-4"
-        >
-          LiLi 3.0
-        </motion.p>
+      {/* Dynamic Hero Greeting */}
+      <div className="text-center mb-8 md:mb-10 space-y-4">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -109,140 +118,174 @@ export function KnowledgeInputView() {
           className="space-y-2"
         >
           <h1 className="text-3xl font-medium text-muted-foreground/60 tracking-tight">
-            Good Morning, Lana!
+            {getGreeting()}!
           </h1>
-          <h2 className="text-4xl md:text-5xl font-medium text-foreground dark:text-white tracking-tight">
-            I am <span className="font-bold">ready to help you</span>
+          <h2 className="text-4xl md:text-5xl max-w-lg font-medium text-foreground dark:text-white tracking-tight leading-tighter">
+            What{" "}
+            <span className="font-bold text-yellow-500/90 italic">
+              knowledge
+            </span>{" "}
+            should we process today?
           </h2>
         </motion.div>
       </div>
 
-      <div className="w-full max-w-4xl relative">
-        <div 
-          className={cn(
-            "bg-zinc-100/80 dark:bg-[#111111] border shadow-2xl rounded-[30px] p-4 transition-all focus-within:ring-1 focus-within:ring-black/10 dark:focus-within:ring-white/10 backdrop-blur-xl",
-            isDragging 
-              ? "border-blue-500 bg-blue-500/5 dark:bg-blue-500/10 ring-1 ring-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.15)] scale-[1.01]" 
-              : "border-black/5 dark:border-white/5"
-          )}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+      <div
+        className="w-full max-w-4xl relative"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as "text" | "file")}
+          className="w-full"
         >
-          <Textarea
-            placeholder="Paste your context here, or drag & drop a .txt file..."
-            className="border-none focus-visible:ring-0 resize-none bg-transparent px-4 py-2 md:text-lg placeholder:text-muted-foreground/50 dark:placeholder:text-muted-foreground/70 font-medium leading-relaxed"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleProcess();
-              }
-            }}
-            disabled={isProcessing}
-          />
-
-          <div className="flex items-center justify-between px-2 mt-4">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAttachMenu(!showAttachMenu)}
-                  className="rounded-full bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 text-[13px] font-medium h-10 px-5 text-foreground dark:text-white hover:bg-black/10 dark:hover:bg-white/10 flex items-center gap-2 transition-all active:scale-95 shadow-sm"
-                >
-                  <Paperclip className="w-4 h-4" />
-                  Attach
-                </Button>
-
-                {/* Micro Attach Menu */}
-                <AnimatePresence>
-                  {showAttachMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      className="absolute bottom-full left-0 mb-3 w-56 bg-white dark:bg-[#1A1A1C] border border-black/10 dark:border-white/10 rounded-2xl p-2 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 backdrop-blur-3xl"
-                    >
-                      <button
-                        onClick={() => {
-                          fileInputRef.current?.click();
-                        }}
-                        className="w-full text-left p-3 text-sm hover:bg-zinc-100 dark:hover:bg-white/5 rounded-xl flex items-center gap-3 transition-colors text-muted-foreground hover:text-foreground dark:hover:text-white"
-                      >
-                        <FileText className="w-4 h-4 text-black/40 dark:text-white/40" />
-                        Upload .txt knowledge base
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            <Button
-              onClick={handleProcess}
-              disabled={(!text.trim() && !file) || isProcessing}
-              size="icon"
-              className={cn(
-                "rounded-full w-10 h-10 transition-all",
-                (text.trim() || file) && !isProcessing
-                  ? "bg-black/5 dark:bg-white/10 text-foreground dark:text-white hover:bg-black/10 dark:hover:bg-white/20 border border-black/10 dark:border-white/10 shadow-lg"
-                  : "bg-black/5 dark:bg-white/5 text-muted-foreground/30 dark:text-muted-foreground/20 border border-black/5 dark:border-white/5",
-              )}
+          {/* Tabs Navigation */}
+          <TabsList className="group-data-horizontal/tabs:h-12 md:mb-4 p-1 bg-black/5 dark:bg-zinc-900/50 w-fit rounded-2xl border border-black/5 dark:border-white/5">
+            <TabsTrigger
+              value="text"
+              className="px-6 py-2.5 text-xs font-semibold rounded-xl transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-[#1A1A1C] data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-black/5 dark:data-[state=active]:border-white/10 text-muted-foreground/50 hover:text-foreground flex items-center gap-2"
             >
-              {isProcessing ? (
-                <Sparkles className="w-4 h-4 animate-pulse" />
-              ) : (
-                <ArrowRight className="w-5 h-5" />
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Selected File Badge */}
-        {file && (
-          <div className="absolute -top-14 left-0 flex items-center gap-2 bg-zinc-100 dark:bg-white/5 border border-black/10 dark:border-white/10 text-foreground dark:text-white/70 px-4 py-2.5 rounded-2xl text-[13px] font-medium backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 shadow-sm">
-            <FileText className="w-4 h-4 opacity-50" />
-            {file.name}
-            <button
-              onClick={() => setFile(null)}
-              className="ml-2 hover:text-red-500 transition-colors"
+              <FileText className="w-3.5 h-3.5" />
+              Direct Text
+            </TabsTrigger>
+            <TabsTrigger
+              value="file"
+              className="px-6 py-2.5 text-xs font-semibold rounded-xl transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-[#1A1A1C] data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-black/5 dark:data-[state=active]:border-white/10 text-muted-foreground/50 hover:text-foreground flex items-center gap-2"
             >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
+              <Paperclip className="w-3.5 h-3.5" />
+              File Input
+            </TabsTrigger>
+          </TabsList>
 
-      {/* Cards Grid (Exactly as image) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-12 w-full max-w-5xl px-4">
-        {[
-          { title: "Do androids dream of electric sheep?", meta: "Right now" },
-          {
-            title: "Androids explained: Why LLMS will rule the world",
-            meta: "4 april",
-          },
-          { title: "View 87+ more external sources", meta: "6 april" },
-          { title: "View 87+ more external sources", meta: "12 april" },
-          { title: "Dreams book", meta: "13 april" },
-        ].map((card, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 + i * 0.08 }}
-            className="bg-zinc-100/80 dark:bg-[#111111] border border-black/5 dark:border-white/5 p-6 rounded-[28px] hover:bg-zinc-200/80 dark:hover:bg-white/5 hover:border-black/10 dark:hover:border-white/10 transition-all cursor-pointer group flex flex-col justify-between aspect-square md:aspect-auto md:h-36 backdrop-blur-md shadow-sm"
+          <div
+            className={cn(
+              "bg-zinc-100/80 dark:bg-[#111111] border shadow-2xl rounded-[18px] p-4 transition-all focus-within:ring-1 focus-within:ring-black/10 dark:focus-within:ring-white/10 backdrop-blur-xl group/container overflow-hidden",
+              isDragging
+                ? "border-yellow-500 bg-yellow-500/5 dark:bg-yellow-500/10 ring-1 ring-yellow-500 shadow-[0_0_30px_rgba(59,130,246,0.15)] scale-[1.01]"
+                : "border-black/5 dark:border-white/5",
+            )}
           >
-            <p className="text-[14px] leading-tight font-medium text-muted-foreground group-hover:text-foreground dark:group-hover:text-white transition-colors line-clamp-3">
-              {card.title}
-            </p>
-            <div className="flex items-center gap-2 text-[11px] text-muted-foreground/30 font-semibold tracking-tight">
-              <Globe className="w-3.5 h-3.5" />
-              {card.meta}
+            <AnimatePresence mode="wait">
+              <TabsContent
+                value="text"
+                className="mt-0 ring-offset-0 focus-visible:ring-0"
+              >
+                <motion.div
+                  key="text"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <Textarea
+                    placeholder="Paste your context here..."
+                    className="border-none focus-visible:ring-0 resize-none dark:bg-transparent px-4 py-2 h-[200px] overflow-y-auto md:text-lg placeholder:text-muted-foreground/50 dark:placeholder:text-muted-foreground/70 font-medium leading-relaxed"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleProcess();
+                      }
+                    }}
+                    disabled={isProcessing}
+                  />
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent
+                value="file"
+                className="mt-0 ring-offset-0 focus-visible:ring-0"
+              >
+                <motion.div
+                  key="file"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="min-h-[200px] flex flex-col items-center justify-center text-center"
+                >
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    className={cn(
+                      "w-full h-full border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 cursor-pointer transition-all p-8",
+                      isDragging
+                        ? "border-yellow-500/50 bg-yellow-500/5 dark:bg-yellow-500/10"
+                        : "border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/10 hover:bg-black/5 dark:hover:bg-white/5",
+                    )}
+                  >
+                    <div className="w-16 h-16 rounded-3xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-muted-foreground/30 dark:text-white/20">
+                      {file ? (
+                        <FileText className="w-8 h-8 text-foreground dark:text-white" />
+                      ) : (
+                        <Paperclip className="w-8 h-8" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground dark:text-white">
+                        {file ? file.name : "Drop your .txt file here"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {file
+                          ? "Ready to analyze — press the arrow to start"
+                          : "or click to browse your files"}
+                      </p>
+                    </div>
+                    {file && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFile(null);
+                        }}
+                        className="rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20! hover:text-red-500 px-4 h-8 text-[11px] font-bold uppercase tracking-wider"
+                      >
+                        Remove File
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              </TabsContent>
+            </AnimatePresence>
+
+            <div className="flex items-center justify-between px-2 mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground/30 dark:text-white/50 px-4">
+                  {activeTab === "text"
+                    ? "Knowledge Text"
+                    : "Document analysis"}
+                </span>
+              </div>
+
+              <Button
+                onClick={handleProcess}
+                disabled={(!text.trim() && !file) || isProcessing}
+                size="icon"
+                className={cn(
+                  "rounded-full w-10 h-10 transition-all",
+                  ((activeTab === "text" && text.trim()) ||
+                    (activeTab === "file" && file)) &&
+                    !isProcessing
+                    ? "bg-black dark:bg-white text-white dark:text-black hover:scale-105 active:scale-95 shadow-xl"
+                    : "bg-black/5 dark:bg-white/5 text-muted-foreground/30 dark:text-muted-foreground/20 border border-black/5 dark:border-white/5",
+                )}
+              >
+                {isProcessing ? (
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                ) : (
+                  <ArrowRight className="w-5 h-5" />
+                )}
+              </Button>
             </div>
-          </motion.div>
-        ))}
+          </div>
+        </Tabs>
       </div>
 
       <input
