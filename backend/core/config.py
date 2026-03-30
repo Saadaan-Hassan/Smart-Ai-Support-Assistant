@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # RAG tuning
     chunk_size: int = 500
     chunk_overlap: int = 50
-    top_k_chunks: int = 4
+    top_k_chunks: int = 10
 
     # Groq model
     groq_model: str = "openai/gpt-oss-120b"

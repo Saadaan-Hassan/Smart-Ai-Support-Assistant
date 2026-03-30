@@ -15,6 +15,7 @@ import json
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+from langchain_core.messages import HumanMessage, AIMessage
 
 from core.config import settings
 from core.session_store import get_session
@@ -44,16 +45,23 @@ async def _event_generator(question: str, session_id: str):
         top_k=settings.top_k_chunks,
     )
 
-    if not relevant_chunks:
+    if not relevant_chunks and not session.messages:
         yield "data: I don't have enough information to answer that.\n\n"
         yield "data: [DONE]\n\n"
         return
 
     # ── 3. Stream LLM response ────────────────────────────────────────────────
-    async for token in stream_answer(question, relevant_chunks):
+    full_response = ""
+    async for token in stream_answer(question, relevant_chunks, session.messages):
         # Escape newlines so SSE stays well-formed
         safe_token = token.replace("\n", "\\n")
         yield f"data: {safe_token}\n\n"
+        full_response += token
+        
+    # Append the interaction to session history
+    if full_response:
+        session.messages.append(HumanMessage(content=question))
+        session.messages.append(AIMessage(content=full_response))
 
     # ── 4. Send sources for front-end highlighting ────────────────────────────
     sources_payload = json.dumps(relevant_chunks)

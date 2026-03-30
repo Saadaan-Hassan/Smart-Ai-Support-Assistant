@@ -16,6 +16,7 @@ import time
 from dataclasses import dataclass, field
 
 import faiss
+from langchain_core.messages import BaseMessage
 
 from core.config import settings
 
@@ -24,6 +25,7 @@ from core.config import settings
 class SessionData:
     index: faiss.Index
     chunks: list[str]
+    messages: list[BaseMessage] = field(default_factory=list)
     created_at: float = field(default_factory=time.time)
     last_accessed: float = field(default_factory=time.time)
 
