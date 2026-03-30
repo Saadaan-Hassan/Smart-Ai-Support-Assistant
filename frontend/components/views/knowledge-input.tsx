@@ -10,7 +10,7 @@ import { ingestContent } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function KnowledgeInputView() {
   const { setSessionId } = useSession();
@@ -142,7 +142,7 @@ export function KnowledgeInputView() {
           className="w-full"
         >
           {/* Tabs Navigation */}
-          <TabsList className="group-data-horizontal/tabs:h-12 md:mb-4 p-1 bg-black/5 dark:bg-zinc-900/50 w-fit rounded-2xl border border-black/5 dark:border-white/5">
+          <TabsList className="group-data-horizontal/tabs:h-12 md:mb-4 p-1 bg-black/5 dark:bg-zinc-900/50 w-fit rounded-2xl border border-black/5 dark:border-white/5 self-center">
             <TabsTrigger
               value="text"
               className="px-6 py-2.5 text-xs font-semibold rounded-xl transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-[#1A1A1C] data-[state=active]:text-foreground dark:data-[state=active]:text-white data-[state=active]:shadow-sm border border-transparent data-[state=active]:border-black/5 dark:data-[state=active]:border-white/10 text-muted-foreground/50 hover:text-foreground flex items-center gap-2"
@@ -167,20 +167,16 @@ export function KnowledgeInputView() {
                 : "border-black/5 dark:border-white/5",
             )}
           >
-            <AnimatePresence mode="wait">
-              <TabsContent
-                value="text"
-                className="mt-0 ring-offset-0 focus-visible:ring-0"
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="w-full"
               >
-                <motion.div
-                  key="text"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                >
+                {activeTab === "text" ? (
                   <Textarea
                     placeholder="Paste your context here..."
                     className="border-none focus-visible:ring-0 resize-none dark:bg-transparent px-4 py-2 h-[200px] overflow-y-auto md:text-lg placeholder:text-muted-foreground/50 dark:placeholder:text-muted-foreground/70 font-medium leading-relaxed"
@@ -194,65 +190,53 @@ export function KnowledgeInputView() {
                     }}
                     disabled={isProcessing}
                   />
-                </motion.div>
-              </TabsContent>
-
-              <TabsContent
-                value="file"
-                className="mt-0 ring-offset-0 focus-visible:ring-0"
-              >
-                <motion.div
-                  key="file"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="min-h-[200px] flex flex-col items-center justify-center text-center"
-                >
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    className={cn(
-                      "w-full h-full border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 cursor-pointer transition-all p-8",
-                      isDragging
-                        ? "border-yellow-500/50 bg-yellow-500/5 dark:bg-yellow-500/10"
-                        : "border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/10 hover:bg-black/5 dark:hover:bg-white/5",
-                    )}
-                  >
-                    <div className="w-16 h-16 rounded-3xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-muted-foreground/30 dark:text-white/20">
-                      {file ? (
-                        <FileText className="w-8 h-8 text-foreground dark:text-white" />
-                      ) : (
-                        <Paperclip className="w-8 h-8" />
+                ) : (
+                  <div className="min-h-[200px] flex flex-col items-center justify-center text-center">
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      className={cn(
+                        "w-full h-full border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-4 cursor-pointer transition-all p-8",
+                        isDragging
+                          ? "border-yellow-500/50 bg-yellow-500/5 dark:bg-yellow-500/10"
+                          : "border-black/10 dark:border-white/5 hover:border-black/20 dark:hover:border-white/10 hover:bg-black/5 dark:hover:bg-white/5",
+                      )}
+                    >
+                      <div className="w-16 h-16 rounded-3xl bg-black/5 dark:bg-white/5 flex items-center justify-center text-muted-foreground/30 dark:text-white/20">
+                        {file ? (
+                          <FileText className="w-8 h-8 text-foreground dark:text-white" />
+                        ) : (
+                          <Paperclip className="w-8 h-8" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground dark:text-white">
+                          {file ? file.name : "Drop your .txt file here"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {file
+                            ? "Ready to analyze — press the arrow to start"
+                            : "or click to browse your files"}
+                        </p>
+                      </div>
+                      {file && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFile(null);
+                          }}
+                          className="rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20! hover:text-red-500 px-4 h-8 text-[11px] font-bold uppercase tracking-wider"
+                        >
+                          Remove File
+                        </Button>
                       )}
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground dark:text-white">
-                        {file ? file.name : "Drop your .txt file here"}
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {file
-                          ? "Ready to analyze — press the arrow to start"
-                          : "or click to browse your files"}
-                      </p>
-                    </div>
-                    {file && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFile(null);
-                        }}
-                        className="rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20! hover:text-red-500 px-4 h-8 text-[11px] font-bold uppercase tracking-wider"
-                      >
-                        Remove File
-                      </Button>
-                    )}
                   </div>
-                </motion.div>
-              </TabsContent>
+                )}
+              </motion.div>
             </AnimatePresence>
 
             <div className="flex items-center justify-between px-2 mt-4 pt-4 border-t border-black/5 dark:border-white/5">

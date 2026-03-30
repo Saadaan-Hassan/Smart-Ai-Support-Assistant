@@ -53,9 +53,9 @@ export function ChatInterface() {
             isLoading={isLoading}
             onStop={stopStreaming}
           />
-          <div className="text-center mt-4">
-            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/20 hover:text-muted-foreground/40 transition-colors cursor-default select-none">
-              Assistant grounded in unique content • Saadaan Helps
+          <div className="text-center my-2">
+            <span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors cursor-default select-none">
+              Answers are strictly grounded in the provided context
             </span>
           </div>
         </div>

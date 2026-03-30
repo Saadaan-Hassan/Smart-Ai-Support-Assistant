@@ -62,6 +62,30 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             <blockquote className={cn("border-l-4 border-indigo-500/50 pl-4 italic my-4 text-muted-foreground", className)} {...props} />
           ),
           
+          // Tables
+          table: ({ className, ...props }) => (
+            <div className="my-6 w-full overflow-hidden rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50/50 dark:bg-white/5">
+              <div className="overflow-x-auto w-full custom-scrollbar">
+                <table className={cn("min-w-[600px] w-full text-sm", className)} {...props} />
+              </div>
+            </div>
+          ),
+          thead: ({ className, ...props }) => (
+            <thead className={cn("bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10", className)} {...props} />
+          ),
+          tbody: ({ className, ...props }) => (
+            <tbody className={cn("bg-transparent", className)} {...props} />
+          ),
+          tr: ({ className, ...props }) => (
+            <tr className={cn("m-0 border-b border-black/10 dark:border-white/10 last:border-0 hover:bg-black/5 dark:hover:bg-white/5 transition-colors", className)} {...props} />
+          ),
+          th: ({ className, ...props }) => (
+            <th className={cn("px-4 py-3 whitespace-nowrap text-left font-bold text-foreground [[align=center]]:text-center [[align=right]]:text-right", className)} {...props} />
+          ),
+          td: ({ className, ...props }) => (
+            <td className={cn("px-4 py-3 text-left text-muted-foreground [[align=center]]:text-center [[align=right]]:text-right", className)} {...props} />
+          ),
+
           // Links
           a: ({ className, ...props }) => (
             <a className={cn("text-indigo-500 hover:text-indigo-400 underline underline-offset-4 transition-colors", className)} {...props} />
